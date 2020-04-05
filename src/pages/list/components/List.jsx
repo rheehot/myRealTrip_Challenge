@@ -30,6 +30,7 @@ export default function List(props) {
                     rate={hotel.rate}
                     reviewScore={hotel.reviewScore}
                     totalReviewCount={hotel.totalReviewCount}
+                    handleClickHotel={() => props.handleClickHotel(hotel.name)}
             />
         })
     }

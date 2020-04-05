@@ -27,18 +27,23 @@ const ViewContainer = styled.div`
     @media (max-width: 420px) {
         display: none;
     }
+
+    > span {
+        margin-right: 4px;
+        padding: 4px 8px;
+        background-color: #eee;
+        font-size: 0.875rem;
+    }
 `;
 
 
-export default function RecentView() {
+export default function RecentView(props) {
 
     return (
         <Wrapper>
             <h3>최근 본 호텔</h3>
             <ViewContainer>
-                <p>1</p>
-                <p>2</p>
-                <p>3</p>
+                {props.names.map((name, idx) => <span key={idx}>{name}</span>)}
             </ViewContainer>
         </Wrapper>
     )

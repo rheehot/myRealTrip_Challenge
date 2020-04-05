@@ -3,6 +3,7 @@ import styled, { createGlobalStyle } from 'styled-components'
 import Filter from './components/Filter'
 import RecentView from './components/RecentView'
 import List from './components/List'
+import { useHistory, useLocation } from "react-router-dom"
 
 const BASE_URL = 'https://x0ofq07ykl.execute-api.ap-northeast-2.amazonaws.com/dev'; 
 
@@ -18,7 +19,7 @@ const GlobalStyle = createGlobalStyle`
             font-size: 14px;
         }
         @media (max-width: 420px) {
-            font-size: 13px;
+            font-size: 12px;
         }
     }
     * { box-sizing: border-box; }
@@ -55,6 +56,9 @@ const Wrapper = styled.div`
 
 
 export default function HotelListPage() {
+    const history = useHistory();
+    const location = useLocation();
+
     const [value, setValue] = useState({
         min: 0,
         max: 1000000,
@@ -81,6 +85,13 @@ export default function HotelListPage() {
         names: [],
     })
 
+    const [page, setPage] = useState({
+        page: 0,
+    });
+
+    const [timer, setTimer] = useState({
+        timer: {},
+    })
     
 
     const handleCheck = (event) => {
@@ -88,15 +99,66 @@ export default function HotelListPage() {
         let name = target.name;
         let isChecked = target.checked;
 
-        setChecked((prev) => {
-            return {
-                ...prev,
-                [name]: isChecked,
-            }
+        let nexState = {
+            ...checked,
+            [name]: isChecked,   
+        }
+
+        let isPriceIncluded = (value.min !== 0 || value.max !== 1000000);
+        let isRatingIncluded = (rating.min !== 0);
+
+        
+        let priceFilter = isPriceIncluded ? `PRICE=${value.min}:${value.max}` : '';
+        let ratingFilter = isRatingIncluded ? `REVIEW-SCORE=${rating.min}` : '';
+        let freeFilter = [];
+        
+        if (nexState.wifi) freeFilter.push('FREE-WIFI');
+        if (nexState.parking) freeFilter.push('FREE-PARKING');
+        if (nexState.pickup) freeFilter.push('FREE-AIRPORT-PICKUP');
+        
+        freeFilter = freeFilter.join(',');
+        if (freeFilter !== '') freeFilter = 'FREE=' + freeFilter;
+
+        let temp = [];
+        if (priceFilter) temp.push(priceFilter);
+        if (ratingFilter) temp.push(ratingFilter);
+        if (freeFilter) temp.push(freeFilter);
+
+        temp = temp.join('|');
+
+        temp = (temp === '') ? '' : 'filters='+temp;
+
+        history.push(`/hotels?${temp}`);
+
+
+        fetchWithFilter();
+        
+
+        // setChecked((prev) => {
+        //     return {
+        //         ...prev,
+        //         [name]: isChecked,
+        //     }
+        // })
+    }
+
+    const handleSlide = (value) => {
+        setValue(value);
+
+        clearTimeout(timer.timer);
+        setTimer({
+            timer: setTimeout(() => {
+                let isPriceIncluded = (value.min !== 0 || value.max !== 1000000);
+                let priceFilter = isPriceIncluded ? `filters=PRICE=${value.min}:${value.max}` : '';
+                history.replace(`/hotels?${priceFilter}`)
+                console.log('history push is complete')
+                fetchWithFilter();
+            }, 1000)
         })
     }
 
-    hnadleClickHotel = (name) => {
+    const handleClickHotel = (name) => {
+        window.alert(`${name}을 조회하였습니다`);
 
         setRecnet((prev) => {
             let names = [...prev.names];
@@ -108,26 +170,46 @@ export default function HotelListPage() {
             names.push(name);
 
             return {
-                names;
+                names,
             }
         })
     }
-  
-  useEffect(() => { 
-    fetch(`${BASE_URL}/hotels`)
-        .then(async res => {
-            if (res.status === 200) {
-                let result = await res.json();
-                setHotel((prev) => {
-                    return {
-                        ...prev,
-                        list: result,
-                        isLoading: false,
-                        isError: false,
-                    }
-                })
-            }
-            else {
+
+    const getChecked = () => {
+        let arr = [];
+
+        if (checked.wifi) arr.push('FREE-WIFI');
+        if (checked.parking) arr.push('FREE-PARKING');
+        if (checked.pickup) arr.push('FREE-AIRPORT-PICKUP');
+
+        return arr.length > 0 ? arr : false;
+    }
+
+    const fetchAPI = (query = '') => {
+        fetch(`${BASE_URL}${query}`)
+            .then(async res => {
+                if (res.status === 200) {
+                    let result = await res.json();
+                    setHotel((prev) => {
+                        return {
+                            ...prev,
+                            list: result,
+                            isLoading: false,
+                            isError: false,
+                        }
+                    })
+                }
+                else {
+                    setHotel((prev) => {
+                        return {
+                            ...prev,
+                            isLoading: false,
+                            isError: true,
+                        }
+                    })
+                }
+            })
+            .catch(err => {
                 setHotel((prev) => {
                     return {
                         ...prev,
@@ -135,37 +217,90 @@ export default function HotelListPage() {
                         isError: true,
                     }
                 })
-            }
-        })
-        .catch(err => {
-            setHotel((prev) => {
-                return {
-                    ...prev,
-                    isLoading: false,
-                    isError: true,
+            })  
+    }
+
+    const fetchWithFilter = () => {
+        // what is query?
+        const query = location.search; // ?key=value
+        console.log(query);
+
+        // fetch depending on query
+        fetchAPI(`/hotels${query}`);
+
+        // set state
+        const params = new URLSearchParams(query);
+        const hasFilters = params.has('filters');
+
+        if (!hasFilters) {
+            return;
+        }
+
+        
+        params
+            .get('filters')
+            .split('|')
+            .map(p => {
+                let key = p.split('=')[0];
+                let value = p.split('=')[1]
+
+                if (key === 'PRICE') {
+                    const [ min, max ] = value.split(':');
+                    
+                    setValue({
+                        min: parseInt(min),
+                        max: parseInt(max),
+                    })
+                }
+                else if (key === 'REVIEW-SCORE') {
+                    setRating({
+                        min: parseInt(value),
+                        max: 10,
+                    })
+                }
+                else if (key === 'FREE') {
+                    const arr = value.split(',');
+
+                    setValue({
+                        wifi: arr.includes('FREE-WIFI'),
+                        parking: arr.includes('FREE-PARKING'),
+                        pickup: arr.includes('FREE-AIRPORT-PICKUP'),
+                    })
                 }
             })
-        })  
-  }, []);
+        
+    }
+  
+    // 초기 로딩 
+    useEffect(() => { 
+        fetchWithFilter();
+        // first render -> what is query? -> fetch depends on query -> setState  
+        // change Filter -> history.push (change query) -> what is query? -> fetch depends on query -> setState  
+        // history.push(`/hotels?name=${name}`);
+    }, []);
 
-  return (
-    <Wrapper>
-        <GlobalStyle/>
-        <Filter 
-            value={value}
-            rating={rating}
-            checked={checked}
-            setValue={setValue}
-            setRating={setRating}
-            setChecked={setChecked}
-            handleCheck={handleCheck}
-        />
-        <RecentView />
-        <List 
-            hotels={hotel.list}
-            isLoading={hotel.isLoading}
-            isError={hotel.isError}
-        />
-    </Wrapper>
-  )
+    return (
+        <Wrapper>
+            <GlobalStyle/>
+            <Filter 
+                value={value}
+                rating={rating}
+                checked={checked}
+                setValue={setValue}
+                setRating={setRating}
+                setChecked={setChecked}
+                handleCheck={handleCheck}
+                handleSlide={handleSlide}
+            />
+            <RecentView
+                names={recentView.names}
+            />
+            <List 
+                hotels={hotel.list}
+                isLoading={hotel.isLoading}
+                isError={hotel.isError}
+                handleClickHotel={handleClickHotel}
+            />
+        </Wrapper>
+    )
 }

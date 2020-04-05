@@ -60,7 +60,7 @@ export default function Filter(props) {
                         value={props.value}
                         step={1000}
                         formatLabel={value => (value === 1000000 ? '1,000,000+' : value.toString())}
-                        onChange={value => props.setValue(value)}
+                        onChange={value => props.handleSlide(value)}
                     />
                 </Input>
                 <Input>
