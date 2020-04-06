@@ -53,8 +53,6 @@ const Wrapper = styled.div`
     
 `;
 
-
-
 export default function HotelListPage() {
     const history = useHistory();
     const location = useLocation();
@@ -86,105 +84,13 @@ export default function HotelListPage() {
     })
 
     const [page, setPage] = useState({
-        page: 0,
+        page: 1,
     });
 
     const [timer, setTimer] = useState({
         timer: {},
     })
     
-
-    const handleCheck = (event) => {
-        let target = event.target;
-        let name = target.name;
-        let isChecked = target.checked;
-
-        let nexState = {
-            ...checked,
-            [name]: isChecked,   
-        }
-
-        let isPriceIncluded = (value.min !== 0 || value.max !== 1000000);
-        let isRatingIncluded = (rating.min !== 0);
-
-        
-        let priceFilter = isPriceIncluded ? `PRICE=${value.min}:${value.max}` : '';
-        let ratingFilter = isRatingIncluded ? `REVIEW-SCORE=${rating.min}` : '';
-        let freeFilter = [];
-        
-        if (nexState.wifi) freeFilter.push('FREE-WIFI');
-        if (nexState.parking) freeFilter.push('FREE-PARKING');
-        if (nexState.pickup) freeFilter.push('FREE-AIRPORT-PICKUP');
-        
-        freeFilter = freeFilter.join(',');
-        if (freeFilter !== '') freeFilter = 'FREE=' + freeFilter;
-
-        let temp = [];
-        if (priceFilter) temp.push(priceFilter);
-        if (ratingFilter) temp.push(ratingFilter);
-        if (freeFilter) temp.push(freeFilter);
-
-        temp = temp.join('|');
-
-        temp = (temp === '') ? '' : 'filters='+temp;
-
-        history.push(`/hotels?${temp}`);
-
-
-        fetchWithFilter();
-        
-
-        // setChecked((prev) => {
-        //     return {
-        //         ...prev,
-        //         [name]: isChecked,
-        //     }
-        // })
-    }
-
-    const handleSlide = (value) => {
-        setValue(value);
-
-        clearTimeout(timer.timer);
-        setTimer({
-            timer: setTimeout(() => {
-                let isPriceIncluded = (value.min !== 0 || value.max !== 1000000);
-                let priceFilter = isPriceIncluded ? `filters=PRICE=${value.min}:${value.max}` : '';
-                history.replace(`/hotels?${priceFilter}`)
-                console.log('history push is complete')
-                fetchWithFilter();
-            }, 1000)
-        })
-    }
-
-    const handleClickHotel = (name) => {
-        window.alert(`${name}을 조회하였습니다`);
-
-        setRecnet((prev) => {
-            let names = [...prev.names];
-
-            if (names.length >= 5) {
-                names.splice(0, 1);
-            }
-            
-            names.push(name);
-
-            return {
-                names,
-            }
-        })
-    }
-
-    const getChecked = () => {
-        let arr = [];
-
-        if (checked.wifi) arr.push('FREE-WIFI');
-        if (checked.parking) arr.push('FREE-PARKING');
-        if (checked.pickup) arr.push('FREE-AIRPORT-PICKUP');
-
-        return arr.length > 0 ? arr : false;
-    }
-
     const fetchAPI = (query = '') => {
         fetch(`${BASE_URL}${query}`)
             .then(async res => {
@@ -220,7 +126,31 @@ export default function HotelListPage() {
             })  
     }
 
-    const fetchWithFilter = () => {
+    const handleSlide = (value) => {
+        setValue(value);
+
+        clearTimeout(timer.timer);
+        setTimer({
+            timer: setTimeout(() => {
+                let isPriceIncluded = (value.min !== 0 || value.max !== 1000000);
+                let priceFilter = isPriceIncluded ? `filters=PRICE=${value.min}:${value.max}` : '';
+
+                history.replace(`/hotels?pages=1&${priceFilter}`);
+                fetchAPI(`/hotels?pages=1&${priceFilter}`);
+                setHotel({
+                    list: [],
+                    isLoading: true,
+                    isError: false,
+                });
+            }, 500)
+        })
+    }
+
+    const handleCheck = (event) => {
+        console.log(event.target);
+    }
+
+    const fetchWithURL = () => {
         // what is query?
         const query = location.search; // ?key=value
         console.log(query);
@@ -270,14 +200,38 @@ export default function HotelListPage() {
             })
         
     }
+
+    const reload = () => {
+        setHotel({
+            list: [],
+            isLoading: true,
+            isError: false,
+        })
+        fetchWithURL();
+    }
   
     // 초기 로딩 
     useEffect(() => { 
-        fetchWithFilter();
-        // first render -> what is query? -> fetch depends on query -> setState  
-        // change Filter -> history.push (change query) -> what is query? -> fetch depends on query -> setState  
-        // history.push(`/hotels?name=${name}`);
+        fetchWithURL();
     }, []);
+
+    const handleClickHotel = (name) => {
+        window.alert(`${name}을 조회하였습니다`);
+
+        setRecnet((prev) => {
+            let names = [...prev.names];
+
+            if (names.length >= 5) {
+                names.splice(0, 1);
+            }
+            
+            names.push(name);
+
+            return {
+                names,
+            }
+        })
+    }
 
     return (
         <Wrapper>
@@ -300,6 +254,7 @@ export default function HotelListPage() {
                 isLoading={hotel.isLoading}
                 isError={hotel.isError}
                 handleClickHotel={handleClickHotel}
+                reload={reload}
             />
         </Wrapper>
     )

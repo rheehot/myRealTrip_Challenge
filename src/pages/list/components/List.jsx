@@ -39,7 +39,12 @@ export default function List(props) {
         <Wrapper>
             {
                 props.isLoading ? <Info>로드 중..</Info> : (
-                    props.isError ? <Info>에러가 발생했습니다. 다시 시도해주세요.</Info> : mapToItem(props.hotels)
+                    props.isError
+                    ? 
+                    <Info>
+                        에러가 발생했습니다. 다시 시도해주세요.
+                        <button onClick={props.reload}>다시 시도</button>
+                    </Info> : mapToItem(props.hotels)
                 )
             }
         </Wrapper>
