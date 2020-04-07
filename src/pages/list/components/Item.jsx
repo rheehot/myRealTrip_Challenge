@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect, useRef } from 'react'
 import styled from 'styled-components'
 
 const Wrapper = styled.article`
@@ -113,10 +113,30 @@ const Review = styled.div`
 
 export default function Item(props) {
 
+    const lazyRef = useRef(null);
+
+    const lazyObserver = new IntersectionObserver((entries, observer) => {
+        if (entries[0].intersectionRatio > 0) {
+            const target = entries[0].target;
+
+            target.src = target.dataset.src;
+            observer.unobserve(target);
+        }
+    })
+
+    useEffect(() => {
+        if (lazyRef.current) {
+            lazyObserver.observe(lazyRef.current);
+        }
+    }, [])
+
     return(
-        <Wrapper onClick={props.handleClickHotel}>
+        <Wrapper 
+            onClick={props.handleClickHotel} 
+            ref={props.lastHotelRef}
+        >
             <ImageContainer>
-                <img src={props.imageUrl} alt={props.name} />
+                <img data-src={props.imageUrl} alt={props.name} ref={lazyRef} />
             </ImageContainer>
             <TextContainer>
                 <Title>{props.name}</Title>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import styled, { createGlobalStyle } from 'styled-components'
 import Filter from './components/Filter'
 import RecentView from './components/RecentView'
@@ -56,6 +56,7 @@ const Wrapper = styled.div`
 export default function HotelListPage() {
     const history = useHistory();
     const location = useLocation();
+    const lastHotelRef = useRef(null);
 
     const [value, setValue] = useState({
         min: 0,
@@ -99,7 +100,7 @@ export default function HotelListPage() {
                     setHotel((prev) => {
                         return {
                             ...prev,
-                            list: result,
+                            list: [...prev.list, ...result],
                             isLoading: false,
                             isError: false,
                         }
@@ -109,6 +110,7 @@ export default function HotelListPage() {
                     setHotel((prev) => {
                         return {
                             ...prev,
+                            list: [],
                             isLoading: false,
                             isError: true,
                         }
@@ -119,6 +121,7 @@ export default function HotelListPage() {
                 setHotel((prev) => {
                     return {
                         ...prev,
+                        list: [],
                         isLoading: false,
                         isError: true,
                     }
@@ -135,8 +138,8 @@ export default function HotelListPage() {
                 let isPriceIncluded = (value.min !== 0 || value.max !== 1000000);
                 let priceFilter = isPriceIncluded ? `filters=PRICE=${value.min}:${value.max}` : '';
 
-                history.replace(`/hotels?pages=1&${priceFilter}`);
-                fetchAPI(`/hotels?pages=1&${priceFilter}`);
+                history.replace(`/hotels?${priceFilter}`);
+                fetchAPI(`/hotels?page=${page.page}&${priceFilter}`);
                 setHotel({
                     list: [],
                     isLoading: true,
@@ -147,16 +150,15 @@ export default function HotelListPage() {
     }
 
     const handleCheck = (event) => {
-        console.log(event.target);
+        console.log('handle Check');
     }
 
     const fetchWithURL = () => {
         // what is query?
-        const query = location.search; // ?key=value
-        console.log(query);
+        const query = location.search.replace('?', ''); // key=value
 
         // fetch depending on query
-        fetchAPI(`/hotels${query}`);
+        fetchAPI(`/hotels?page=${page.page}&${query}`);
 
         // set state
         const params = new URLSearchParams(query);
@@ -199,6 +201,25 @@ export default function HotelListPage() {
                 }
             })
         
+    }
+
+    const fetchWithScroll = () => {
+        // what is query?
+        const query = location.search.replace('?', ''); // key=value
+
+        // fetch depending on query
+        fetchAPI(`/hotels?page=${page.page + 1}&${query}`);
+
+        // set state
+        setPage({
+            page: page.page + 1,
+        })
+        setHotel((prev) => {
+            return {
+                ...prev,
+                isLoading: true,
+            }
+        })
     }
 
     const reload = () => {
@@ -255,6 +276,8 @@ export default function HotelListPage() {
                 isError={hotel.isError}
                 handleClickHotel={handleClickHotel}
                 reload={reload}
+                lastHotelRef={lastHotelRef}
+                fetchWithScroll={fetchWithScroll}
             />
         </Wrapper>
     )
