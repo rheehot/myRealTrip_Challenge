@@ -79,21 +79,21 @@ export default function Filter(props) {
                     <input
                         type="checkbox"
                         onChange={props.handleCheck}
-                        checked={props.checked.wifi}
+                        checked={props.value.wifi}
                         name="wifi"
                     /> Free WIFI
                     <br/>
                     <input
                         type="checkbox"
                         onChange={props.handleCheck}
-                        checked={props.checked.parking}
+                        checked={props.value.parking}
                         name="parking"
                     /> Free Parking
                     <br/>
                     <input
                         type="checkbox"
                         onChange={props.handleCheck}
-                        checked={props.checked.pickup}
+                        checked={props.value.pickup}
                         name="pickup"
                     /> Free Airport Pickup
                 </Input>

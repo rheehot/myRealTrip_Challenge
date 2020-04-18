@@ -39,7 +39,7 @@ export default function List(props) {
         if (lastHotelRef.current) {
             lastHotelObserver.observe(lastHotelRef.current);
         }
-    });
+    },[props.hotels.length]);
 
     const mapToItem = (hotels) => {
         return hotels.map((hotel, idx) => {
@@ -53,6 +53,7 @@ export default function List(props) {
                         rate={hotel.rate}
                         reviewScore={hotel.reviewScore}
                         totalReviewCount={hotel.totalReviewCount}
+                        price={hotel.price ? `${hotel.price}원~` : `가격 불러오는 중..` }
                         handleClickHotel={() => props.handleClickHotel(hotel.name)}
                         lastHotelRef={lastHotelRef}
                     />
@@ -65,6 +66,7 @@ export default function List(props) {
                         rate={hotel.rate}
                         reviewScore={hotel.reviewScore}
                         totalReviewCount={hotel.totalReviewCount}
+                        price={hotel.price ? `${hotel.price}원~` : `가격 불러오는 중..` }
                         handleClickHotel={() => props.handleClickHotel(hotel.name)}
                     />
             )

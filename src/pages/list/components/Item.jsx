@@ -111,6 +111,16 @@ const Review = styled.div`
     }
 `;
 
+const Price = styled.div`
+    position: absolute;
+    right: 6px;
+    bottom: 4px;
+    font-size: 1.125rem;
+    color: white;
+    background-color: dodgerblue;
+    padding: 2px 4px;
+`;
+
 export default function Item(props) {
 
     const lazyRef = useRef(null);
@@ -150,6 +160,9 @@ export default function Item(props) {
                     <span>{props.totalReviewCount}개의 이용후기</span>
                     <span>{props.reviewScore}</span>
                 </Review>
+                <Price>
+                    {props.price}
+                </Price>
             </TextContainer>
         </Wrapper>
     )

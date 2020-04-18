@@ -61,17 +61,14 @@ export default function HotelListPage() {
     const [value, setValue] = useState({
         min: 0,
         max: 1000000,
+        wifi: false,
+        parking: false,
+        pickup: false,
     })
 
     const [rating, setRating] = useState({
         min: 0,
         max: 10,
-    })
-
-    const [checked, setChecked] = useState({
-        wifi: false,
-        parking: false,
-        pickup: false,
     })
 
     const [hotel, setHotel] = useState({
@@ -97,6 +94,7 @@ export default function HotelListPage() {
             .then(async res => {
                 if (res.status === 200) {
                     let result = await res.json();
+                    
                     setHotel((prev) => {
                         return {
                             ...prev,
@@ -129,8 +127,75 @@ export default function HotelListPage() {
             })  
     }
 
+    useEffect(() => {
+        console.log("fetch New Price");
+        const ids = hotel.list
+            .filter(hotel => {
+                return hotel.price === undefined;
+            })
+            .map(hotel => {
+                return hotel.id;
+            });
+        
+        fetchPrice(ids);
+    }, [ hotel.list.length ])
+
+    const fetchPrice = (ids) => {
+
+        while (ids.length > 0) {
+            const splicedId = ids.splice(0, 4);
+            recursiveFetchPrice(splicedId, 0);
+        }
+    }
+
+    const recursiveFetchPrice = (ids, num) => {
+        if (num >= 1) {
+            console.log("retry fetchPrice..", ids, num);
+        }
+        if (num >= 4) {
+            return console.error("가격을 불러오는데 실패했습니다");
+        }
+
+        fetch(`${BASE_URL}/hotel-prices?ids=${ids.join(',')}`)
+            .then(async res => {
+                if(res.status === 200) { 
+                    let priceObj = await res.json();
+                    let hotelList = hotel.list;
+                    
+                    Object.keys(priceObj).forEach((id) => {
+                        let idx = hotelList.findIndex(hotel => hotel.id === parseInt(id));
+
+                        hotelList[idx] = {
+                            ...hotelList[idx],
+                            price: priceObj[id],
+                        }
+
+                        setHotel(prev => {
+                            return {
+                                ...prev,
+                                list: hotelList
+                            }
+                        })
+                    })  
+                }
+                else {
+                    return recursiveFetchPrice(ids, num + 1);
+                }
+            })
+            .catch(err => {
+                console.log(err);
+                return recursiveFetchPrice(ids, num + 1);
+            })
+    }
+
     const handleSlide = (value) => {
-        setValue(value);
+        
+        setValue((prev) => {
+            return {
+                ...prev,
+                ...value,
+            }
+        });
 
         clearTimeout(timer.timer);
         setTimer({
@@ -179,9 +244,12 @@ export default function HotelListPage() {
                 if (key === 'PRICE') {
                     const [ min, max ] = value.split(':');
                     
-                    setValue({
-                        min: parseInt(min),
-                        max: parseInt(max),
+                    setValue((prev) => {
+                        return {
+                            ...prev,
+                            min: parseInt(min),
+                            max: parseInt(max),
+                        }
                     })
                 }
                 else if (key === 'REVIEW-SCORE') {
@@ -193,10 +261,13 @@ export default function HotelListPage() {
                 else if (key === 'FREE') {
                     const arr = value.split(',');
 
-                    setValue({
-                        wifi: arr.includes('FREE-WIFI'),
-                        parking: arr.includes('FREE-PARKING'),
-                        pickup: arr.includes('FREE-AIRPORT-PICKUP'),
+                    setValue(prev => {
+                        return {
+                            ...prev,
+                            wifi: arr.includes('FREE-WIFI'),
+                            parking: arr.includes('FREE-PARKING'),
+                            pickup: arr.includes('FREE-AIRPORT-PICKUP'),
+                        }
                     })
                 }
             })
@@ -260,10 +331,8 @@ export default function HotelListPage() {
             <Filter 
                 value={value}
                 rating={rating}
-                checked={checked}
                 setValue={setValue}
                 setRating={setRating}
-                setChecked={setChecked}
                 handleCheck={handleCheck}
                 handleSlide={handleSlide}
             />
