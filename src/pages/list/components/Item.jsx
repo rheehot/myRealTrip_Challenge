@@ -21,6 +21,7 @@ const ImageContainer = styled.div`
     width: 260px;
     height: 100%;
     margin-right: 26px;
+    background-color: lightgrey;
     
     > img { 
         width: 100%;

@@ -39,7 +39,7 @@ export default function List(props) {
         if (lastHotelRef.current) {
             lastHotelObserver.observe(lastHotelRef.current);
         }
-    },[props.hotels.length]);
+    },[ props.hotels.length ]);
 
     const mapToItem = (hotels) => {
         return hotels.map((hotel, idx) => {
